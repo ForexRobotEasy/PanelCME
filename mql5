@@ -1,0 +1,97 @@
+
+//+------------------------------------------------------------------+
+//|                                   PanelCME                      |
+//|                          forexroboteasy.com                       |
+//|                     Development: Forex Robot Easy Team           |
+//+------------------------------------------------------------------+
+
+// Include necessary libraries and define variables
+#include <Trade/Trade.mqh>
+CTrade trade;
+double stopLoss;
+double takeProfit;
+double trailingStop;
+double breakevenPips;
+int ticket;
+
+//+------------------------------------------------------------------+
+//|                   Set stop loss and take profit                  |
+//+------------------------------------------------------------------+
+void SetStopLossTakeProfit(double stopLossPips, double takeProfitPips)
+{
+   stopLoss = stopLossPips * _Point;
+   takeProfit = takeProfitPips * _Point;
+   trade.PositionModify(ticket, 0, stopLoss, takeProfit);
+}
+
+//+------------------------------------------------------------------+
+//|                        Convert to breakeven                      |
+//+------------------------------------------------------------------+
+void ConvertToBreakeven()
+{
+   double openPrice = trade.PositionGetDouble(POSITION_PRICE_OPEN);
+   double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double breakevenLevel = openPrice + breakevenPips * _Point;
+   if (currentPrice >= breakevenLevel)
+   {
+      trade.PositionModify(ticket, breakevenLevel, stopLoss, takeProfit);
+   }
+}
+
+//+------------------------------------------------------------------+
+//|                   Trailing Stop Loss feature                     |
+//+------------------------------------------------------------------+
+void TrailingStopLoss()
+{
+   double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double trailingStopLevel = currentPrice - trailingStop * _Point;
+   if (currentPrice >= trailingStopLevel)
+   {
+      trade.PositionModify(ticket, trailingStopLevel, stopLoss, takeProfit);
+   }
+}
+
+//+------------------------------------------------------------------+
+//|                   Set take profit as limit order                  |
+//+------------------------------------------------------------------+
+void SetTakeProfitAsLimit()
+{
+   trade.PositionModify(ticket, stopLoss, takeProfit, 0);
+}
+
+//+------------------------------------------------------------------+
+//|                       Main start function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   // Initialize variables
+   stopLoss = 50 * _Point;
+   takeProfit = 100 * _Point;
+   trailingStop = 20 * _Point;
+   breakevenPips = 10;
+
+   // Place a market order
+   ticket = trade.Buy(0.1);
+
+   // Set stop loss and take profit levels
+   SetStopLossTakeProfit(stopLoss, takeProfit);
+
+   // Convert to breakeven
+   ConvertToBreakeven();
+
+   // Trailing stop loss
+   TrailingStopLoss();
+
+   // Set take profit as limit order
+   SetTakeProfitAsLimit();
+
+   return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//|                     Main execution function                      |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   // No additional actions required in this example
+}
